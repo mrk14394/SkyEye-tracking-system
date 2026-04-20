@@ -29,3 +29,4 @@ This project demonstrates a real-time predictive system
 
 ## Note
 This project is for research and educational purposes only.
+This version is for demonstrate the capabillity of the system.
