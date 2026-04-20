@@ -1,0 +1,68 @@
+import cv2
+import numpy as np
+from ultralytics import YOLO
+
+# === CONFIG ===
+model = YOLO("yolov8n.pt")
+
+# smoothing buffer
+prev_centers = []
+
+def get_center(box):
+    return (int((box[0]+box[2])/2), int((box[1]+box[3])/2))
+
+def smooth_center(center):
+    prev_centers.append(center)
+    if len(prev_centers) > 5:
+        prev_centers.pop(0)
+    avg = np.mean(prev_centers, axis=0)
+    return int(avg[0]), int(avg[1])
+
+def draw_crosshair(frame, center):
+    cx, cy = center
+    cv2.line(frame, (cx-20, cy), (cx+20, cy), (0,255,0), 2)
+    cv2.line(frame, (cx, cy-20), (cx, cy+20), (0,255,0), 2)
+
+def draw_fake_lead(frame, center):
+    # simple fake lead (just shift forward)
+    lx, ly = center[0] + 30, center[1]
+    cv2.circle(frame, (lx, ly), 6, (0,0,255), -1)
+    cv2.line(frame, center, (lx, ly), (0,0,255), 2)
+
+# === CAMERA ===
+cap = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    results = model(frame, verbose=False)[0]
+    
+    for r in results.boxes.data:
+        if int(r[5]) == 0:  # class 0 (person)
+            x1, y1, x2, y2 = map(int, r[:4])
+            
+            center = get_center([x1, y1, x2, y2])
+            center = smooth_center(center)
+
+            # draw box
+            cv2.rectangle(frame, (x1,y1), (x2,y2), (0,255,0), 2)
+
+            # draw crosshair
+            draw_crosshair(frame, center)
+
+            draw_fake_lead(frame, center)
+
+            break  # track only one
+
+    cv2.putText(frame, "SKYEYE Lite Demo", (20,30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,255), 2)
+
+    cv2.imshow("SKYEYE Lite", frame)
+    
+    if cv2.waitKey(1) & 0xFF == 27:
+        break
+
+cap.release()
+cv2.destroyAllWindows()
