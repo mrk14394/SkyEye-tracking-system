@@ -1,4 +1,4 @@
-# SkyEye-tracking-system
+# SkyEye-tracking-system (demo)
 Real-time AI tracking system with target detection, Kalman-based prediction, and lead estimation. Built for dynamic object tracking and visualization.
 # SKYEYE AI - Real-Time Tracking & Prediction System
 
